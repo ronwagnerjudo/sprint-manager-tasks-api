@@ -45,8 +45,9 @@ def add_tasks():
     return jsonify({"success": "Successfully added new task."}), 200
 
 
-@app.route("/delete/<int:task_id>", methods=["DELETE"])
-def delete_task(task_id):
+@app.route("/delete", methods=["DELETE"])
+def delete_task():
+    task_id = request.form.get("id")
     task_to_delete = SprintManager.query.get(task_id)
     if task_to_delete:         
         db.session.delete(task_to_delete)
@@ -56,12 +57,13 @@ def delete_task(task_id):
         return jsonify(error={"Not Found": "Sorry a task with that id was not found in the database."}), 404
 
 
-@app.route("/update-task/<int:task_id>", methods=["PUT"])
-def update_task(task_id):
+@app.route("/update-task", methods=["PUT"])
+def update_task():
     user_name = request.form.get("username")
     task_name = request.form.get("task_name")
     task_time = request.form.get("task_time")
 
+    task_id = request.form.get("id")
     task_to_update = SprintManager.query.get(task_id)
     if task_to_update:
         task_to_update.username = user_name
