@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+import requests
 
 
 app = Flask(__name__)
@@ -14,13 +15,13 @@ class SprintManager(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True)
     task_name = db.Column(db.String)
-    task_time = db.Column(db.String)
+    task_time = db.Column(db.Float)
+
 
     def to_dict(self):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
 # db.create_all()
-
 
 
 @app.route("/all")
@@ -35,13 +36,23 @@ def add_tasks():
     task_name = request.form.get("task_name")
     task_time = request.form.get("task_time")
     
+    
     add_new_task = SprintManager(
         username = user_name,
         task_name = task_name,
-        task_time = task_time
+        task_time_start = task_time  
     )
     db.session.add(add_new_task)
     db.session.commit()
+
+    task_params = {
+        "username": user_name,
+        "task_name": task_name,
+        "task_time_start": task_time
+    }
+
+    requests.post("http://127.0.0.1:8080/new_task", json=task_params)
+    
     return jsonify({"success": "Successfully added new task."}), 200
 
 
@@ -76,4 +87,4 @@ def update_task():
 
 
 if __name__ =="__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
