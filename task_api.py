@@ -52,7 +52,6 @@ def add_tasks():
     }
 
     requests.post("http://127.0.0.1:8080/new_task", json=task_params)
-    
     return jsonify({"success": "Successfully added new task."}), 200
 
 
@@ -63,6 +62,11 @@ def delete_task():
     if task_to_delete:         
         db.session.delete(task_to_delete)
         db.session.commit()
+
+        task_params = {
+        "task_name": task_to_delete['task_name']
+        }
+        requests.post("http://127.0.0.1:8080/delete", json=task_params)
         return jsonify({"success": "Successfully deleted task."}), 200
     else:
         return jsonify(error={"Not Found": "Sorry a task with that id was not found in the database."}), 404
@@ -81,6 +85,14 @@ def update_task():
         task_to_update.task_name = task_name
         task_to_update.task_time = task_time
         db.session.commit()
+
+        task_params = {
+        "username": user_name,
+        "task_name": task_name,
+        "task_time_start": task_time
+        }
+
+        requests.put("http://127.0.0.1:8080/new_task", json=task_params)
         return jsonify({"success": "Successfully updated the new task."}), 200
     else:
         return jsonify(error={"Not Found": "Sorry a task with that id was not found in the database."}), 404
