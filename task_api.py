@@ -1,17 +1,17 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import requests
+import os
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox45hg45htr'
+app.config['SECRET_KEY'] = os.environ["TASK_API_SECRET_KEY"]
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sprint-manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 class SprintManager(db.Model):
     __tablename__ = "tasks"
-    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True)
     task_name = db.Column(db.String)
