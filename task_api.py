@@ -9,6 +9,8 @@ logging.basicConfig(level=logging.INFO)
 CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
 
 app = Flask(__name__)
+
+#------------------------------DATEBASE-------------------------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sprint-manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -24,9 +26,10 @@ class SprintManager(db.Model):
     def to_dict(self):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
-# db.create_all()
+db.create_all()
 
 
+#--------------------------------APP----------------------------------------
 @app.route("/all")
 def all_tasks():
     logging.INFO("querying all task in db")
@@ -40,25 +43,29 @@ def add_tasks():
     task_name = request.form.get("task_name")
     task_time = request.form.get("task_time")
     logging.INFO("getting data from the front-end")
-    
-    add_new_task = SprintManager(
-        username = user_name,
-        task_name = task_name,
-        task_time_start = task_time  
-    )
-    db.session.add(add_new_task)
-    db.session.commit()
-    logging.INFO("added new task to the db")
 
-    task_params = {
-        "username": user_name,
-        "task_name": task_name,
-        "task_time_start": task_time
-    }
+    if user_name != "" or task_name != "" or task_time != "":
+        add_new_task = SprintManager(
+            username = user_name,
+            task_name = task_name,
+            task_time_start = task_time  
+        )
+        db.session.add(add_new_task)
+        db.session.commit()
+        logging.INFO("added new task to the db")
 
-    requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
-    logging.INFO("sent post request to calendar api")
-    return jsonify({"success": "Successfully added new task."}), 200
+        task_params = {
+            "username": user_name,
+            "task_name": task_name,
+            "task_time_start": task_time
+        }
+
+        logging.INFO("init post request")
+        requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
+        logging.INFO("sent post request to calendar api")
+        return jsonify({"success": "Successfully added new task."}), 200
+    else:
+        return jsonify(error={"Not valid": "Sorry, you can't leave input empty."}), 404
 
 
 @app.route("/delete", methods=["DELETE"])
@@ -74,6 +81,8 @@ def delete_task():
         task_params = {
         "task_name": task_to_delete['task_name']
         }
+
+        logging.INFO("init delete request")
         requests.delete(f"{CALENDER_API_URL}/delete", json=task_params)
         logging.INFO("sent delete request to calendar api")
         return jsonify({"success": "Successfully deleted task."}), 200
@@ -105,6 +114,7 @@ def update_task():
         "task_time_start": task_time
         }
 
+        logging.INFO("init put request")
         requests.put(f"{CALENDER_API_URL}/new_task", json=task_params)
         logging.INFO("sent put request to calendar api")
         return jsonify({"success": "Successfully updated the new task."}), 200
