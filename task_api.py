@@ -11,7 +11,7 @@ CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
 app = Flask(__name__)
 
 #------------------------------DATEBASE-------------------------------------
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sprint-manager.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks-sprint-manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
