@@ -3,24 +3,32 @@ from flask_sqlalchemy import SQLAlchemy
 import requests
 import os
 import logging
+from functools import wraps
+import jwt
+
 
 logging.basicConfig(level=logging.INFO)
 
+JWT_SECRET = 'secret'
+JWT_ALGORITHM = 'HS256'
 CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
 
+#--------------------------------APP CONFIG-----------------------------------------
 app = Flask(__name__)
+app.secret_key = os.urandom(12).hex()
 
 #------------------------------DATEBASE-------------------------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks-sprint-manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-class SprintManager(db.Model):
+class TasksSprintManager(db.Model):
     __tablename__ = "tasks"
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String, unique=True)
-    task_name = db.Column(db.String)
+    sub = db.Column(db.String, unique=True)
+    task_name = db.Column(db.String(50))
     task_time = db.Column(db.Float)
+    google_event_id = db.Column(db.String(100))
 
 
     def to_dict(self):
@@ -28,34 +36,46 @@ class SprintManager(db.Model):
 
 db.create_all()
 
+#----------------------------------------------------------------------------
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
 
+        if 'jwt' in request.cookies.get("jwt"):
+            token = request.cookies['jwt']
+
+        if not token:
+            return jsonify({'message' : 'Token is missing!'}), 401
+
+        try: 
+            data = jwt.decode(token, JWT_SECRET, JWT_ALGORITHM)
+            current_user = TasksSprintManager.query.filter_by(sub=data['sub']).first()
+        except:
+            return jsonify({'message' : 'Token is invalid!'}), 401
+
+        return f(current_user, *args, **kwargs)
+
+    return decorated
 #--------------------------------APP----------------------------------------
 @app.route("/all")
-def all_tasks():
+@token_required
+def all_tasks(current_user):
     logging.INFO("querying all task in db")
-    all_tasks = db.session.query(SprintManager).all()
+    all_tasks = TasksSprintManager.query.filter_by(sub=current_user.sub).all()
     return jsonify(tasks=[task.to_dict() for task in all_tasks])
 
 
-@app.route("/add", methods=["POST"])
-def add_tasks():
-    user_name = request.form.get("username")
+@app.route("/add", methods=["GET", "POST"])
+@token_required
+def add_tasks(current_user):
+    user_sub = current_user.sub
     task_name = request.form.get("task_name")
     task_time = request.form.get("task_time")
     logging.INFO("getting data from the front-end")
 
-    if user_name != "" or task_name != "" or task_time != "":
-        add_new_task = SprintManager(
-            username = user_name,
-            task_name = task_name,
-            task_time_start = task_time  
-        )
-        db.session.add(add_new_task)
-        db.session.commit()
-        logging.INFO("added new task to the db")
-
+    if task_name != "" or task_time != "":
         task_params = {
-            "username": user_name,
             "task_name": task_name,
             "task_time_start": task_time
         }
@@ -63,15 +83,33 @@ def add_tasks():
         logging.INFO("init post request")
         requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
         logging.INFO("sent post request to calendar api")
+
+        get_response = requests.get("https://127.0.0.1:8080/new_task")
+        logging.INFO("getting the id of the event from calendar api")
+        response = get_response.json()
+        google_event_id = response["googleEventId"]
+
+        add_new_task = TasksSprintManager(
+            username = user_sub,
+            task_name = task_name,
+            task_time_start = task_time,
+            google_event_id = google_event_id  
+        )
+        db.session.add(add_new_task)
+        db.session.commit()
+        logging.INFO("added new task to the db")
+
+  
         return jsonify({"success": "Successfully added new task."}), 200
     else:
         return jsonify(error={"Not valid": "Sorry, you can't leave input empty."}), 404
 
 
 @app.route("/delete", methods=["DELETE"])
-def delete_task():
+@token_required
+def delete_task(current_user):
     task_id = request.form.get("id")
-    task_to_delete = SprintManager.query.get(task_id)
+    task_to_delete = TasksSprintManager.query.filter_by(id=task_id, user_id=current_user.sub).first()
     logging.INFO("finding the task by id")
     if task_to_delete:         
         db.session.delete(task_to_delete)
@@ -79,7 +117,8 @@ def delete_task():
         logging.INFO("task deleted in db")
 
         task_params = {
-        "task_name": task_to_delete['task_name']
+        "task_name": task_to_delete['task_name'],
+        "googleEventId": task_to_delete['google_event_id']
         }
 
         logging.INFO("init delete request")
@@ -91,27 +130,26 @@ def delete_task():
         return jsonify(error={"Not Found": "Sorry a task with that id was not found in the database."}), 404
 
 
-@app.route("/update-task", methods=["PUT"])
-def update_task():
-    user_name = request.form.get("username")
+@app.route("/update-task", methods=["PUT", "PATCH"])
+@token_required
+def update_task(current_user):
     task_name = request.form.get("task_name")
     task_time = request.form.get("task_time")
     logging.INFO("getting data from the front-end")
 
     task_id = request.form.get("id")
     logging.INFO("querying db to find the task by id")
-    task_to_update = SprintManager.query.get(task_id)
+    task_to_update = TasksSprintManager.query.filter_by(id=task_id, user_id=current_user.sub).first()
     if task_to_update:
-        task_to_update.username = user_name
         task_to_update.task_name = task_name
         task_to_update.task_time = task_time
         db.session.commit()
         logging.INFO("updated task in db")
 
         task_params = {
-        "username": user_name,
         "task_name": task_name,
-        "task_time_start": task_time
+        "task_time_start": task_time,
+        "googleEventId": task_to_update['google_event_id']
         }
 
         logging.INFO("init put request")
