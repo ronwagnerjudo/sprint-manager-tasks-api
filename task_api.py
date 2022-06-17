@@ -38,7 +38,15 @@ class TasksSprintManager(db.Model):
 
 db.create_all()
 
-#----------------------------------------------------------------------------
+#--------------------------------FUNCTIONS-----------------------------------
+
+def parse_date(string_date):
+    """Takes this type of string datetime (%Y-%m-%dT%H:%M:%S), and change it to different type (Mon Dec 31 17:41:00 2018) """
+    task_start_time = datetime.strptime(string_date, "%Y-%m-%dT%H:%M:%S")
+    formatted_task_start_time = datetime.strftime(task_start_time, "%c")
+    return formatted_task_start_time
+
+#-------------------------------DECORATOR------------------------------------
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -91,9 +99,8 @@ def add_tasks(current_user):
         logging.INFO("getting the id of the event from calendar api")
         response = get_response.json()
         google_event_id = response["googleEventId"]
-        task_start_datetime = response["eventStartDate"]
-        formatted_task_start_time = datetime.strptime(task_start_datetime, '%c')
-
+        task_start_datetime_string = response["eventStartDate"]
+        formatted_task_start_time = parse_date(task_start_datetime_string)
 
         add_new_task = TasksSprintManager(
             username = user_sub,
