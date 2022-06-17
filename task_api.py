@@ -4,7 +4,8 @@ import requests
 import os
 import logging
 from functools import wraps
-import jwt
+from datetime import datetime
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +30,7 @@ class TasksSprintManager(db.Model):
     task_name = db.Column(db.String(50))
     task_time = db.Column(db.Float)
     google_event_id = db.Column(db.String(100))
+    task_start_datetime = db.Column(db.String(50))
 
 
     def to_dict(self):
@@ -49,7 +51,8 @@ def token_required(f):
             return jsonify({'message' : 'Token is missing!'}), 401
 
         try: 
-            data = jwt.decode(token, JWT_SECRET, JWT_ALGORITHM)
+            response = requests.get("https://127.0.0.1:5000/get-credentials")
+            data = response.json()
             current_user = TasksSprintManager.query.filter_by(sub=data['sub']).first()
         except:
             return jsonify({'message' : 'Token is invalid!'}), 401
@@ -84,16 +87,20 @@ def add_tasks(current_user):
         requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
         logging.INFO("sent post request to calendar api")
 
-        get_response = requests.get("https://127.0.0.1:8080/new_task")
+        get_response = requests.get("https://127.0.0.1:8080/new_task", timeout=3)
         logging.INFO("getting the id of the event from calendar api")
         response = get_response.json()
         google_event_id = response["googleEventId"]
+        task_start_datetime = response["eventStartDate"]
+        formatted_task_start_time = datetime.strptime(task_start_datetime, '%c')
+
 
         add_new_task = TasksSprintManager(
             username = user_sub,
             task_name = task_name,
             task_time_start = task_time,
-            google_event_id = google_event_id  
+            google_event_id = google_event_id,
+            task_start_datetime = formatted_task_start_time
         )
         db.session.add(add_new_task)
         db.session.commit()
@@ -162,4 +169,4 @@ def update_task(current_user):
 
 
 if __name__ =="__main__":
-    app.run(debug=True, port=3000)
+    app.run(debug=True, port=3000, ssl_context='adhoc')
