@@ -51,19 +51,20 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
-
+  
         if 'jwt' in request.cookies.get("jwt"):
-            token = request.cookies['jwt']
+            token = request.cookies['sub']
 
         if not token:
             return jsonify({'message' : 'Token is missing!'}), 401
 
         try: 
-            response = requests.get("https://127.0.0.1:5000/get-credentials")
+            response = requests.get("https://127.0.0.1:5000/get-user-details")
+            response.raise_for_status()
             data = response.json()
             current_user = TasksSprintManager.query.filter_by(sub=data['sub']).first()
         except:
-            return jsonify({'message' : 'Token is invalid!'}), 401
+            return jsonify({"message' : 'couldn't get a response"}), 404
 
         return f(current_user, *args, **kwargs)
 
@@ -116,7 +117,7 @@ def add_tasks(current_user):
   
         return jsonify({"success": "Successfully added new task."}), 200
     else:
-        return jsonify(error={"Not valid": "Sorry, you can't leave input empty."}), 404
+        return jsonify(error={"Not valid": "Sorry, you can't leave fields empty."}), 404
 
 
 @app.route("/delete", methods=["DELETE"])
