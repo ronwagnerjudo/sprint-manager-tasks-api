@@ -59,8 +59,8 @@ def token_required(f):
             return jsonify({'message' : 'Token is missing!'}), 401
 
         try: 
-            response = requests.get("https://127.0.0.1:5000/get-user-details")
-            response.raise_for_status()
+            response = requests.get("https://127.0.0.1:5000/get-user-details", verify=False)
+            print(response.text)
             data = response.json()
             current_user = TasksSprintManager.query.filter_by(sub=data['sub']).first()
         except:
