@@ -61,7 +61,7 @@ def token_required(f):
             return jsonify({'message' : 'Token is missing!'}), 401
 
         try: 
-            response = requests.get("https://127.0.0.1:5000/get-user-details", verify=False)
+            response = requests.get("http://127.0.0.1:5000/get-user-details", verify=False)
             print(response.text)
             data = response.json()
             current_user = TasksSprintManager.query.filter_by(sub=data['sub']).first()
@@ -98,7 +98,7 @@ def add_tasks(current_user):
         requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
         logging.INFO("sent post request to calendar api")
 
-        get_response = requests.get("https://127.0.0.1:8080/new_task", timeout=3)
+        get_response = requests.get("http://127.0.0.1:8080/new_task", timeout=3)
         logging.INFO("getting the id of the event from calendar api")
         response = get_response.json()
         google_event_id = response["googleEventId"]
@@ -179,4 +179,4 @@ def update_task(current_user):
 
 
 if __name__ =="__main__":
-    app.run(debug=True, port=3030, ssl_context='adhoc')
+    app.run(debug=True, port=3030)
