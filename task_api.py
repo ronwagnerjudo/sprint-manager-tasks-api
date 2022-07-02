@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import requests
 import os
+from flask_cors import CORS
 import logging
 from functools import wraps
 from datetime import datetime
@@ -17,6 +18,7 @@ CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
 #--------------------------------APP CONFIG-----------------------------------------
 app = Flask(__name__)
 app.secret_key = os.urandom(12).hex()
+CORS(app,  supports_credentials=True)
 
 #------------------------------DATEBASE-------------------------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks-sprint-manager.db'
