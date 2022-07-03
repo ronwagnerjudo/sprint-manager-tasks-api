@@ -95,13 +95,12 @@ def add_tasks(current_user):
         }
 
         logging.info("init post request")
-        requests.post(f"{CALENDER_API_URL}/new_task", json=task_params)
+        response = requests.post(f"{CALENDER_API_URL}/new_task", json=task_params, cookies=request.cookies)
         logging.info("sent post request to calendar api")
 
-        get_response = requests.get("http://127.0.0.1:8080/new_task", timeout=3, cookies=request.cookies)
-        if get_response.status_code == 200:
+        if response.status_code == 200:
             logging.info("getting the id of the event from calendar api")
-            response = get_response.json()["event"]
+            response = response.json()["event"]
             google_event_id = response["googleEventId"]
             task_start_datetime_string = response["start"]["dateTime"]
             formatted_task_start_time = parse_date(task_start_datetime_string)
@@ -118,7 +117,7 @@ def add_tasks(current_user):
             logging.info("added new task to the db")
             return jsonify({"success": "Successfully added new task."}), 200
         else:
-            return jsonify({"error": "Couldn't add new task to google calendar"}), get_response.status_code
+            return jsonify({"error": "Couldn't add new task to google calendar"}), response.status_code
     else:
         return jsonify({"Not valid": "Sorry, you can't leave fields empty."}), 404
 
