@@ -110,7 +110,7 @@ def add_tasks(current_user):
 
         if response.status_code == 200:
             logging.info("Getting the id of the event from calendar api")
-            response = response.json()["event"]
+            response = response.json()
             google_event_id = response["googleEventId"]
             task_start_datetime_string = response["start"]["dateTime"]
             formatted_task_start_time = parse_date(task_start_datetime_string)
@@ -153,7 +153,7 @@ def delete_task(current_user):
             logging.info("Sent delete request to calendar api")
         except:
             logging.info("Problem with the calendar_api/delete response")
-            return jsonify({"message": "Problem with response."})
+            return jsonify({"message": "Problem with response."}), response.status_code
 
         if response.status_code == 200:
             logging.info("Sent delete request to calendar api")
