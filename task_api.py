@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 JWT_SECRET = 'secret'
 JWT_ALGORITHM = 'HS256'
 CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
+USER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:5000")
 
 #--------------------------------APP CONFIG-----------------------------------------
 app = Flask(__name__)
@@ -63,7 +64,7 @@ def token_required(f):
             return jsonify({'message' : 'Token is missing!'}), 401
 
         try: 
-            response = requests.get("http://127.0.0.1:5000/get-user-details", cookies=request.cookies)
+            response = requests.get(f"{USER_API_URL}/get-user-details", cookies=request.cookies)
             logging.info("Sent get request to user api")
         except:
             logging.info("Problem with the get-user-details response")
