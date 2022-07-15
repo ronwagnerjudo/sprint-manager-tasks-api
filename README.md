@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ### Request - GET
 
 `
-http://127.0.0.1:3000/all
+http://127.0.0.1:3030/all
 `
 
 ## Add new task
@@ -24,7 +24,7 @@ http://127.0.0.1:3000/all
 ### Request - POST
 
 `
-http://127.0.0.1:3000/add
+http://127.0.0.1:3030/add
 `
 
 ## Update existing task
@@ -32,7 +32,7 @@ http://127.0.0.1:3000/add
 ### Request - PUT
 
 `
-http://127.0.0.1:3000/update-task
+http://127.0.0.1:3030/update-task
 `
 
 ## Delete task
@@ -40,6 +40,6 @@ http://127.0.0.1:3000/update-task
 ### Request - DELETE
 
 `
-http://127.0.0.1:3000/delete
+http://127.0.0.1:3030/delete
 `
 
