@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 JWT_SECRET = 'secret'
 JWT_ALGORITHM = 'HS256'
 CALENDER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:8080")
-USER_API_URL = os.getenv("CALENDER_API_URL", "http://127.0.0.1:5000")
+USER_API_URL = os.getenv("USER_API_URL", "http://127.0.0.1:5000")
 
 #--------------------------------APP CONFIG-----------------------------------------
 app = Flask(__name__)
@@ -78,6 +78,10 @@ def token_required(f):
 
     return decorated
 #--------------------------------APP----------------------------------------
+@app.route('/', methods=["GET"])
+def status():
+    return {'status': "200"}, 200
+    
 @app.route("/all")
 @token_required
 def all_tasks(current_user):
@@ -216,4 +220,4 @@ def update_task(current_user):
 
 
 if __name__ =="__main__":
-    app.run(debug=True, port=3030)
+    app.run(host="0.0.0.0",debug=True, port=80)
